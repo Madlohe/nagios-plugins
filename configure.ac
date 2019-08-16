@@ -209,6 +209,43 @@ if test "$enable_extra_opts" = "yes" ; then
 	fi
 fi
 
+dnl Check for RRD libraries
+_SAVEDLIBS="$LIBS"
+_SAVEDCPPFLAGS="$CPPFLAGS"
+AC_SUBST(RRDLIBS)
+AC_SUBST(RRDINCLUDE)
+AC_ARG_WITH(rrd,
+  ACX_HELP_STRING([--with-rrd=DIR],
+    [sets path to rrd installation]),
+    RRD=$withval,)
+if test "x$RRD" != "xno"; then
+  if test -n "$RRD"; then
+    LDFLAGS="$LDFLAGS -L$RRD"
+    CPPFLAGS="$CPPFLAGS -I$RRD/include"
+  fi
+  AC_CHECK_LIB(rrd,rrd_random)
+  if test "$ac_cv_lib_rrd_rrd_client_new" = "yes"; then
+    AC_CHECK_HEADERS(rrd.h rrd_client.h rrd_format.h)
+    if [[ -n "$RRD" -a "$ac_cv_header_rrd_h" = "yes" -a "$ac_vc_header_rrd_client_h" = "yes" -a "$ac_vc_header_rrd_format_h" = "yes" ]]; then
+      RRDLIBS="-L $RRD/lib -lrrd -D USE_RRD_LIBS"
+      RRDINCLUDE="-I$RRD/include"
+    elif [[ "$ac_cv_header_rrd_h" = "yes" -a "$ac_vc_header_rrd_client_h" = "yes" -a "$ac_vc_header_rrd_format_h" = "yes" ]]; then
+      RRDLIBS="-lrrd -D USE_RRD_LIBS"
+      RRDINCLUDE="-I/usr/include/"
+    fi
+    if test -z "$RRDINCLUDE"; then
+      AC_MSG_WARN([Skipping direct RRD support (check_mrtgtraf)])
+      AC_MSG_WARN([install RRDtool headers to monitor the direct RRD file instead of the log])
+    fi
+  else
+    AC_MSG_WARN([Skipping direct RRD support (check_mrtgtraf)])
+    AC_MSG_WARN([install RRDtool headers to monitor the direct RRD file instead of the log])
+  fi
+else
+  AC_MSG_WARN([Skipping direct RRD support (check_mrtgtraf)])
+  AC_MSG_WARN([install RRDtool headers to monitor the direct RRD file instead of the log])
+fi
+
 dnl Check for PostgreSQL libraries
 _SAVEDLIBS="$LIBS"
 _SAVEDCPPFLAGS="$CPPFLAGS"
